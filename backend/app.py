@@ -3,10 +3,10 @@ import joblib
 import numpy as np
 import pandas as pd
 
-app = Flask(_name_)
+app = Flask(__name__)
 
 # Load the trained model
-model = joblib.load("water_model.pkl")
+model = joblib.load('../model-training/linear_regression_model.pkl')
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -30,10 +30,15 @@ def predict():
         "acres": acres
     }])
 
-    # Make prediction
-    prediction = model.predict(input_df)[0]
+    # One-hot encode input and align with training columns
+    input_encoded = pd.get_dummies(input_df)
+    input_encoded = input_encoded.reindex(columns=joblib.load('../model-training/model_columns.pkl'), fill_value=0)
 
-    return jsonify({"prediction": round(prediction, 2)})
+    # Predict
+    prediction = model.predict(input_encoded)[0]
+    print(f"✅ Predicted water_required: {prediction}")
 
-if _name_ == '_main_':
+    return jsonify({"status_code": 200, "prediction_lr": round(prediction, 2)})
+
+if __name__ == '__main__':
     app.run(debug=True)
